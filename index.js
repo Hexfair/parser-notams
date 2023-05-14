@@ -1,26 +1,53 @@
 import axios from 'axios';
-import cheerio from 'cheerio';
+import * as cheerio from 'cheerio';
 import fs from 'fs';
 import date from 'date-and-time';
-import icaoDB from './icaoDB.js';
-import unflat from './unflat.js';
+import icaoAll from './icao-all.js';
+import icaoMy from './icao-my.js';
 import alert from 'alert';
 //==============================================================================================================
-const regex = new RegExp(/\t/, 'ig');
+const params = process.argv[2];
+const lastFileName = process.argv[3];
+const regex1 = new RegExp(/\t/, 'ig');
 const regex2 = new RegExp(/\n/, 'ig');
+const regex3 = new RegExp(/\r/, 'ig');
+//==============================================================================================================
+let strAllNotams = '';
+let strNewNotams = '';
+let arrLast;
+let j = 0;
 //==============================================================================================================
 
-//const icaoDB4 = icaoDB.split(', ').filter(obj => obj.length === 4);
+lastFileName && fs.readFile(`./output/${lastFileName}`, "utf8", (err, data) => {
+	if (err) {
+		console.error(err);
+		alert(`Ошибка чтения файла ${lastFileName}...`);
+		return
+	}
+	arrLast = data.replace(regex3, '').split('\n');
+});
 
-const initailArrIcaoCodes = unflat(icaoDB.split(', '), 50);
-let j = 0;
-let arrJson = [];
-let stringTxt = '';
+const unflat = (src, count) => {
+	const result = [];
+	for (let s = 0, e = count; s < src.length; s += count, e += count)
+		result.push(src.slice(s, e).join('+'));
+	return result;
+}
+
+const createNewNotams = (str, icaoCode) => {
+	if (!arrLast.includes(str)) {
+		strNewNotams = strNewNotams + `-----${icaoCode}-----\r\n${str}` + "\r\n\r\n";
+	}
+}
+
+const initailArrIcaoCodes = params === 'my' ? unflat(icaoMy.split(', '), 50) : unflat(icaoAll.split(', '), 50);
 
 const timerId = setInterval(() => {
-	console.log(`Загрузка ${j + 1} из ${initailArrIcaoCodes.length} ...`);
-	fetch(initailArrIcaoCodes[j]);
-	j = j + 1;
+	if (j < initailArrIcaoCodes.length) {
+		console.log(`Загрузка ${j + 1} из ${initailArrIcaoCodes.length} ...`);
+		fetch(initailArrIcaoCodes[j]);
+		j = j + 1;
+	}
 }, 10000);
 
 const fetch = async (codes) => {
@@ -31,99 +58,43 @@ const fetch = async (codes) => {
 	for (let i = 1; i < elements.length; i++) {
 		if (i % 2 !== 0) {
 			let icaoElem = $(elements[i]).find(".textBlack12Bu a")[0];
-			let icaoCode = $(icaoElem).text().replace(regex, '').replace(regex2, '').trim();
-			let notamArr = [];
+			let icaoCode = $(icaoElem).text().replace(regex1, '').replace(regex2, '').trim();
 			let notamElems = $(elements[i + 1]).find(".textBlack12 pre");
 
 			if (notamElems.length > 0) {
 				$(notamElems).each(function () {
-					notamArr.push($(this).text().replace(regex, ''));
-					stringTxt = stringTxt + `${icaoCode}\r\n${$(this).text().replace(regex, '')}` + "\r\n\r\n";
-				});
+					const str = $(this).text().replace(regex1, '').replace(regex2, '');
+					strAllNotams = strAllNotams + `-----${icaoCode}-----\r\n${str}` + "\r\n\r\n";
 
-				let item = {
-					icaoCode: icaoCode,
-					icaoNotams: notamArr
-				};
-				arrJson.push(item);
+					lastFileName && createNewNotams(str, icaoCode);
+				});
 			}
 		}
 	}
 
-	if (j === initailArrIcaoCodes.length) {
+	if (j >= initailArrIcaoCodes.length) {
 		const now = new Date();
-		const dateParse = date.format(now, 'YYYY-MM-DD_HH.mm');
+		const dateParse = date.format(now, "YYYY-MM-DD_HH.mm");
 
-		fs.writeFile(`${dateParse}_notams.json`, JSON.stringify(arrJson, null, 2), (err) => {
+		fs.writeFile(`./output/${dateParse}_notams.txt`, strAllNotams, (err) => {
 			if (err) {
 				console.error(err);
-				alert('Произошла ошибка создания файла json...');
-				return;
-			}
-			alert(`Загрузка успешно завершена! Сохранен файл "${dateParse}_notams.json"`);
-		});
-
-		fs.writeFile(`${dateParse}_notams.txt`, stringTxt, (err) => {
-			if (err) {
-				console.error(err);
-				alert('Произошла ошибка создания файла txt...');
+				alert("Произошла ошибка создания файла txt...");
 				return;
 			}
 			alert(`Загрузка успешно завершена! Сохранен файл "${dateParse}_notams.txt"`);
 		});
 
+		lastFileName && fs.writeFile(`./output/${dateParse}_notams_new.txt`, strNewNotams, (err) => {
+			if (err) {
+				console.error(err);
+				alert("Произошла ошибка создания файла new txt...");
+				return;
+			}
+			alert(`Загрузка успешно завершена! Сохранен файл "${dateParse}_notams_new.txt"`);
+		});
+
 		clearInterval(timerId);
-		console.log("Finish");
+		console.log("Работа программы завершена");
 	}
 }
-
-fetch();
-
-
-
-// fs.writeFile("pokemon.json", JSON.stringify(pokemonData, null, 2), (err) => {
-// 	if (err) {
-// 		console.error(err);
-// 		return;
-// 	}
-// 	console.log("Data written to file successfully!");
-// });
-
-//https://www.notams.faa.gov/dinsQueryWeb/queryRetrievalMapAction.do?reportType=Report&retrieveLocId=kzma+paza&actionType=notamRetrievalByICAOs&submit=View+NOTAMs
-
-
-	//const element = ".textBlack12 pre";
-	// $(element).each(function () {
-	// 	const link = $(this);
-	// 	console.log('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!', link)
-	// });
-
-
-	// const arr = Array.from($(element))
-	// console.log(arr.length)
-	// $(element).each(function () {
-	// 	const link = $(this);
-
-	// 	console.log('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!', link.length)
-	// });
-
-
-	// .then((arr) => {
-	// 	const now = new Date();
-	// 	const dateParse = date.format(now, 'YYYY-MM-DD');
-
-	// 	fs.writeFile(`${dateParse}_notams.json`, JSON.stringify(arr, null, 2), (err) => {
-	// 		if (err) {
-	// 			console.error(err);
-	// 			return;
-	// 		}
-	// 		console.log("Data written to file successfully!");
-	// 	});
-	// 	console.log("Finish")
-	// })
-
-	// const start = async () => {
-// 	const codesList = icaoDB;
-// 	await fetch(codesList);
-
-// }

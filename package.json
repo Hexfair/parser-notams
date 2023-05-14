@@ -1,13 +1,13 @@
 {
 	"name": "parser02_notams",
 	"version": "1.0.0",
-	"description": "",
+	"description": "Parser https://www.notams.faa.gov",
 	"main": "index.js",
 	"type": "module",
 	"scripts": {
 		"start": "node index"
 	},
-	"author": "",
+	"author": "HexFaiR",
 	"license": "ISC",
 	"dependencies": {
 		"alert": "^5.1.4",
