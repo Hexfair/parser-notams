@@ -3,17 +3,16 @@
 	"version": "1.0.0",
 	"description": "",
 	"main": "index.js",
+	"type": "module",
 	"scripts": {
 		"start": "node index"
 	},
 	"author": "",
 	"license": "ISC",
 	"dependencies": {
+		"alert": "^5.1.4",
 		"axios": "^1.4.0",
 		"cheerio": "^1.0.0-rc.12",
-		"date-and-time": "^3.0.0",
-		"jsdom": "^22.0.0",
-		"osmosis": "^1.1.10",
-		"request": "^2.88.2"
+		"date-and-time": "^3.0.0"
 	}
 }
