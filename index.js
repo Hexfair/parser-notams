@@ -21,6 +21,11 @@ let j = 0;
 console.log('Парсер запущен!');
 
 fs.readdir('./output', function (err, items) {
+	if (items.length === 0) {
+		arrLast = [];
+		return;
+	}
+
 	if (err) {
 		console.error(err);
 		alert(`Ошибка чтения файла ${items[items.length - 1]}...`);
