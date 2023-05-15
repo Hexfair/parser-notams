@@ -120,6 +120,8 @@ const fetch = async (codes) => {
 		}
 	} catch (error) {
 		console.log('Ошибка парсинга...');
-		clearInterval(timerId);
+		if (j >= initailArrIcaoCodes.length) {
+			clearInterval(timerId);
+		}
 	}
 }
