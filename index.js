@@ -91,6 +91,15 @@ const fetch = async (codes) => {
 		const dateParse = date.format(now, "YYYY-MM-DD_HH.mm");
 		const dateParseNew = date.format(one_minutes_minus, "YYYY-MM-DD_HH.mm");
 
+		fs.writeFile(`./output/${dateParseNew}_notams_new.txt`, strNewNotams, (err) => {
+			if (err) {
+				console.error(err);
+				alert("Произошла ошибка создания файла new txt...");
+				return;
+			}
+			alert(`Загрузка успешно завершена! Сохранен файл "${dateParseNew}_notams_new.txt"`);
+		});
+
 		fs.writeFile(`./output/${dateParse}_notams.txt`, strAllNotams, (err) => {
 			if (err) {
 				console.error(err);
@@ -100,14 +109,6 @@ const fetch = async (codes) => {
 			alert(`Загрузка успешно завершена! Сохранен файл "${dateParse}_notams.txt"`);
 		});
 
-		fs.writeFile(`./output/${dateParseNew}_notams_new.txt`, strNewNotams, (err) => {
-			if (err) {
-				console.error(err);
-				alert("Произошла ошибка создания файла new txt...");
-				return;
-			}
-			alert(`Загрузка успешно завершена! Сохранен файл "${dateParseNew}_notams_new.txt"`);
-		});
 		clearInterval(timerId);
 		console.log("Работа программы завершена");
 	}
