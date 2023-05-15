@@ -18,13 +18,26 @@ let arrLast;
 let j = 0;
 //==============================================================================================================
 
-lastFileName && fs.readFile(`./output/${lastFileName}`, "utf8", (err, data) => {
+console.log('Парсер запущен!');
+
+fs.readdir('./output', function (err, items) {
 	if (err) {
 		console.error(err);
-		alert(`Ошибка чтения файла ${lastFileName}...`);
-		return
-	}
-	arrLast = data.replace(regex3, '').split('\n');
+		alert(`Ошибка чтения файла ${items[items.length - 1]}...`);
+		return;
+	};
+
+	const file = lastFileName ? `./output/${lastFileName}` : `./output/${items[items.length - 1]}`;
+	console.log(`Для формирования файла с префиксом "new" будет происходить сравнение с файлом ${file}`);
+
+	fs.readFile(file, "utf8", (err, data) => {
+		if (err) {
+			console.error(err);
+			alert(`Ошибка чтения файла ${file}...`);
+			return;
+		};
+		arrLast = data.replace(regex3, '').split('\n');
+	})
 });
 
 const unflat = (src, count) => {
@@ -48,7 +61,7 @@ const timerId = setInterval(() => {
 		fetch(initailArrIcaoCodes[j]);
 		j = j + 1;
 	}
-}, 10000);
+}, 15000);
 
 const fetch = async (codes) => {
 	const { data } = await axios.get(`https://www.notams.faa.gov/dinsQueryWeb/queryRetrievalMapAction.do?reportType=Report&retrieveLocId=${codes}&actionType=notamRetrievalByICAOs&submit=View+NOTAMs`);
@@ -66,7 +79,7 @@ const fetch = async (codes) => {
 					const str = $(this).text().replace(regex1, '').replace(regex2, '');
 					strAllNotams = strAllNotams + `-----${icaoCode}-----\r\n${str}` + "\r\n\r\n";
 
-					lastFileName && createNewNotams(str, icaoCode);
+					createNewNotams(str, icaoCode);
 				});
 			}
 		}
@@ -74,7 +87,9 @@ const fetch = async (codes) => {
 
 	if (j >= initailArrIcaoCodes.length) {
 		const now = new Date();
+		const one_minutes_minus = date.addMinutes(now, -1);
 		const dateParse = date.format(now, "YYYY-MM-DD_HH.mm");
+		const dateParseNew = date.format(one_minutes_minus, "YYYY-MM-DD_HH.mm");
 
 		fs.writeFile(`./output/${dateParse}_notams.txt`, strAllNotams, (err) => {
 			if (err) {
@@ -85,15 +100,14 @@ const fetch = async (codes) => {
 			alert(`Загрузка успешно завершена! Сохранен файл "${dateParse}_notams.txt"`);
 		});
 
-		lastFileName && fs.writeFile(`./output/${dateParse}_notams_new.txt`, strNewNotams, (err) => {
+		fs.writeFile(`./output/${dateParseNew}_notams_new.txt`, strNewNotams, (err) => {
 			if (err) {
 				console.error(err);
 				alert("Произошла ошибка создания файла new txt...");
 				return;
 			}
-			alert(`Загрузка успешно завершена! Сохранен файл "${dateParse}_notams_new.txt"`);
+			alert(`Загрузка успешно завершена! Сохранен файл "${dateParseNew}_notams_new.txt"`);
 		});
-
 		clearInterval(timerId);
 		console.log("Работа программы завершена");
 	}

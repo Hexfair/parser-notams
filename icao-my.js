@@ -1,2 +1,2 @@
-const my = 'KZMA, KZNY';
+const my = 'KZMA, KZNY, PAZA, LEMO, KPVF';
 export default my;
