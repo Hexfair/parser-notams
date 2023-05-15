@@ -69,52 +69,57 @@ const timerId = setInterval(() => {
 }, 15000);
 
 const fetch = async (codes) => {
-	const { data } = await axios.get(`https://www.notams.faa.gov/dinsQueryWeb/queryRetrievalMapAction.do?reportType=Report&retrieveLocId=${codes}&actionType=notamRetrievalByICAOs&submit=View+NOTAMs`);
-	const $ = cheerio.load(data);
-	const elements = $("form div table tbody tr td table");
+	try {
+		const { data } = await axios.get(`https://www.notams.faa.gov/dinsQueryWeb/queryRetrievalMapAction.do?reportType=Report&retrieveLocId=${codes}&actionType=notamRetrievalByICAOs&submit=View+NOTAMs`);
+		const $ = cheerio.load(data);
+		const elements = $("form div table tbody tr td table");
 
-	for (let i = 1; i < elements.length; i++) {
-		if (i % 2 !== 0) {
-			let icaoElem = $(elements[i]).find(".textBlack12Bu a")[0];
-			let icaoCode = $(icaoElem).text().replace(regex1, '').replace(regex2, '').trim();
-			let notamElems = $(elements[i + 1]).find(".textBlack12 pre");
+		for (let i = 1; i < elements.length; i++) {
+			if (i % 2 !== 0) {
+				let icaoElem = $(elements[i]).find(".textBlack12Bu a")[0];
+				let icaoCode = $(icaoElem).text().replace(regex1, '').replace(regex2, '').trim();
+				let notamElems = $(elements[i + 1]).find(".textBlack12 pre");
 
-			if (notamElems.length > 0) {
-				$(notamElems).each(function () {
-					const str = $(this).text().replace(regex1, '').replace(regex2, '');
-					strAllNotams = strAllNotams + `-----${icaoCode}-----\r\n${str}` + "\r\n\r\n";
+				if (notamElems.length > 0) {
+					$(notamElems).each(function () {
+						const str = $(this).text().replace(regex1, '').replace(regex2, '');
+						strAllNotams = strAllNotams + `-----${icaoCode}-----\r\n${str}` + "\r\n\r\n";
 
-					createNewNotams(str, icaoCode);
-				});
+						createNewNotams(str, icaoCode);
+					});
+				}
 			}
 		}
-	}
 
-	if (j >= initailArrIcaoCodes.length) {
-		const now = new Date();
-		const one_minutes_minus = date.addMinutes(now, -1);
-		const dateParse = date.format(now, "YYYY-MM-DD_HH.mm");
-		const dateParseNew = date.format(one_minutes_minus, "YYYY-MM-DD_HH.mm");
+		if (j >= initailArrIcaoCodes.length) {
+			const now = new Date();
+			const one_minutes_minus = date.addMinutes(now, -1);
+			const dateParse = date.format(now, "YYYY-MM-DD_HH.mm");
+			const dateParseNew = date.format(one_minutes_minus, "YYYY-MM-DD_HH.mm");
 
-		fs.writeFile(`./output/${dateParseNew}_notams_new.txt`, strNewNotams, (err) => {
-			if (err) {
-				console.error(err);
-				alert("Произошла ошибка создания файла new txt...");
-				return;
-			}
-			alert(`Загрузка успешно завершена! Сохранен файл "${dateParseNew}_notams_new.txt"`);
-		});
+			fs.writeFile(`./output/${dateParseNew}_notams_new.txt`, strNewNotams, (err) => {
+				if (err) {
+					console.error(err);
+					alert("Произошла ошибка создания файла new txt...");
+					return;
+				}
+				alert(`Загрузка успешно завершена! Сохранен файл "${dateParseNew}_notams_new.txt"`);
+			});
 
-		fs.writeFile(`./output/${dateParse}_notams.txt`, strAllNotams, (err) => {
-			if (err) {
-				console.error(err);
-				alert("Произошла ошибка создания файла txt...");
-				return;
-			}
-			alert(`Загрузка успешно завершена! Сохранен файл "${dateParse}_notams.txt"`);
-		});
+			fs.writeFile(`./output/${dateParse}_notams.txt`, strAllNotams, (err) => {
+				if (err) {
+					console.error(err);
+					alert("Произошла ошибка создания файла txt...");
+					return;
+				}
+				alert(`Загрузка успешно завершена! Сохранен файл "${dateParse}_notams.txt"`);
+			});
 
+			clearInterval(timerId);
+			console.log("Работа программы завершена");
+		}
+	} catch (error) {
+		console.log('Ошибка парсинга...');
 		clearInterval(timerId);
-		console.log("Работа программы завершена");
 	}
 }
